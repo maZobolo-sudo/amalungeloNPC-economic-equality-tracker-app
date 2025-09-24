@@ -1,0 +1,22 @@
+import streamlit as st, pandas as pd, matplotlib.pyplot as plt
+from pathlib import Path
+from src.config import load_config
+st.title("📈 FBW Trends & Compliance")
+WORKSPACE = st.secrets.get("workspace_key","default")
+cfg = load_config(WORKSPACE)
+p = Path(f"tenants/{WORKSPACE}/data/fbw.csv")
+if not p.exists(): st.warning("No dataset. Use Data Intake."); st.stop()
+df = pd.read_csv(p)
+df["fbw_coverage_pct"] = (df["fbw_households_served"] / df["households_indigent"].replace(0,1)).clip(0,2)
+df["litres_per_hh_month"] = (df["litres_provided_total"] / df["fbw_households_served"].replace(0,1)).fillna(0)
+wsa = st.selectbox("Select WSA for trend view", sorted(df["wsa"].unique().tolist()))
+sub = df[df["wsa"]==wsa].sort_values("year")
+st.subheader(f"Coverage vs indigent register — {wsa}")
+fig = plt.figure(figsize=(6,3)); plt.plot(sub["year"], sub["fbw_coverage_pct"]*100, marker="o"); plt.axhline(100, linestyle="--"); plt.ylabel("% of indigent served")
+st.pyplot(fig)
+st.subheader("Average litres per FBW household (vs statutory minimum)")
+fig2 = plt.figure(figsize=(6,3)); plt.plot(sub["year"], sub["litres_per_hh_month"], marker="o"); plt.axhline(cfg["fbw_min_kl_per_month"]*1000, linestyle="--"); plt.ylabel("litres / month")
+st.pyplot(fig2)
+sub["below_fbw_min"] = (sub["litres_per_hh_month"] < cfg["fbw_min_kl_per_month"]*1000).astype(int)
+sub["coverage_below_register"] = (sub["fbw_households_served"] < sub["households_indigent"]).astype(int)
+st.dataframe(sub[["year","fbw_coverage_pct","litres_per_hh_month","below_fbw_min","coverage_below_register"]])

@@ -1,0 +1,21 @@
+import streamlit as st, pandas as pd, numpy as np, matplotlib.pyplot as plt
+from pathlib import Path
+st.title("⚖️ Economic Inequality Lens")
+WORKSPACE = st.secrets.get("workspace_key","default")
+p = Path(f"tenants/{WORKSPACE}/data/fbw.csv")
+if not p.exists(): st.warning("No dataset. Use Data Intake."); st.stop()
+df = pd.read_csv(p)
+df["revenue_per_hh_R"] = (df["revenue_Rm"]*1e6) / df["households_total"].replace(0,1)
+latest = df.sort_values("year").groupby("wsa").tail(1)
+latest["fbw_coverage_pct"] = (latest["fbw_households_served"]/latest["households_indigent"].replace(0,1)).clip(0,2)
+st.subheader("Coverage vs Unemployment")
+fig = plt.figure(figsize=(6,3)); plt.scatter(latest["unemployment_rate"], latest["fbw_coverage_pct"]*100); plt.xlabel("Unemployment rate"); plt.ylabel("FBW coverage (%)")
+st.pyplot(fig)
+st.subheader("Coverage vs Revenue per household")
+fig2 = plt.figure(figsize=(6,3)); plt.scatter(latest["revenue_per_hh_R"], latest["fbw_coverage_pct"]*100); plt.xlabel("Revenue per household (R)"); plt.ylabel("FBW coverage (%)")
+st.pyplot(fig2)
+q25 = latest["revenue_per_hh_R"].quantile(0.25); q75 = latest["revenue_per_hh_R"].quantile(0.75)
+low = latest[latest["revenue_per_hh_R"]<=q25]["fbw_coverage_pct"].mean()
+high = latest[latest["revenue_per_hh_R"]>=q75]["fbw_coverage_pct"].mean()
+idx = (low / high) if high>0 else np.nan
+st.metric("Inequality Index (low-rev / high-rev coverage)", f"{idx:.2f}")

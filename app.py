@@ -1,6 +1,6 @@
 import streamlit as st
 from pathlib import Path
-st.set_page_config(page_title="⚖️ Economic Equality Tracker (Water Services)", layout="wide")
+st.set_page_config(page_title="💧 FBW & Economic Equality Tracker", layout="wide")
 creds = st.secrets.get("credentials", {})
 users, pwds, roles, names = (creds.get("usernames",[]), creds.get("passwords",[]),
                              creds.get("roles",[]), creds.get("names",[]))
@@ -20,7 +20,7 @@ if users and "user" not in st.session_state:
 role = st.session_state.get("role","viewer"); name = st.session_state.get("name","Guest")
 WORKSPACE = st.secrets.get("workspace_key","default")
 ORG = st.secrets.get("org_name","Your Organization")
-for sub in ["data","models","reports"]: Path(f"tenants/{WORKSPACE}/{sub}").mkdir(parents=True, exist_ok=True)
-st.title("⚖️ Economic Equality Tracker (Water Services)")
+for sub in ["data","models","reports","config"]: Path(f"tenants/{WORKSPACE}/{sub}").mkdir(parents=True, exist_ok=True)
+st.title("💧 FBW & Economic Equality Tracker")
 st.caption(f"{ORG} • Signed in as **{name}** (role: {role}) • Workspace: **{WORKSPACE}**")
 st.sidebar.success("Use the pages to navigate →")
